@@ -36,7 +36,7 @@ sequelize
     console.error(err);
   });
 
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(cors({ credentials: true, origin: process.env.FRONT_URL }));
 
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));

@@ -16,10 +16,10 @@ module.exports = {
     dialect: "mysql",
   },
   production: {
-    username: "root",
+    username: "rvvbvx1xsivfwi6p",
     password: process.env.SEQUELIZE_PASSWORD,
-    database: "movieinfos",
-    host: "127.0.0.1",
+    database: "o7d0aqsay1eq22vd",
+    host: "un0jueuv2mam78uv.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
     dialect: "mysql",
     logging: false,
   },
