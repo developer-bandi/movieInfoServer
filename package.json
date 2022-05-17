@@ -4,7 +4,7 @@
   "description": "익스프레스로 만드는 sns 서비스",
   "main": "app.js",
   "scripts": {
-    "start": "NODE_ENV=production PORT=80 pm2 start app.js",
+    "start": "NODE_ENV=production pm2 start app.js",
     "dev": "nodemon server"
   },
   "author": "kimsangdu",
