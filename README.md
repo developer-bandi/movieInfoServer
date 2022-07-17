@@ -31,4 +31,4 @@
 
 # 5. ERD
 
-![ex_screenshot](./img/erd.png)
+![ERD](./imgs/erd.png)
