@@ -1,10 +1,11 @@
 const axios = require("axios");
 const express = require("express");
+const nation = require("../lib/nation");
 const router = express.Router();
 
 router.get("/home", async (req, res, next) => {
   try {
-    const resultArr = [];
+    const resultObj = {};
     await axios
       .all([
         axios.get(
@@ -16,26 +17,47 @@ router.get("/home", async (req, res, next) => {
       ])
       .then(
         axios.spread((res0, res1) => {
-          resultArr[0] = res0.data.results;
-          resultArr[1] = res1.data.results;
+          resultObj.nowShowingInfo = res0.data.results.map((posterInfo) => {
+            return {
+              id: posterInfo["id"],
+              title: posterInfo["title"],
+              overview: posterInfo["overview"],
+              voteAverage: posterInfo["vote_average"],
+              posterPath: posterInfo["poster_path"],
+            };
+          });
+          resultObj.nowCommingInfo = res1.data.results.map((posterInfo) => {
+            return {
+              id: posterInfo["id"],
+              title: posterInfo["title"],
+              overview: posterInfo["overview"],
+              voteAverage: posterInfo["vote_average"],
+              posterPath: posterInfo["poster_path"],
+            };
+          });
         })
       );
+    for (let i = 0; i < resultObj.nowShowingInfo.length; i++) {
+      const tempvalue = await axios.get(
+        `https://api.themoviedb.org/3/movie/${resultObj.nowShowingInfo[i]["id"]}/videos?api_key=${process.env.API_KEY}&language=ko-KR`
+      );
+      if (tempvalue.data.results.length !== 0) {
+        resultObj.key =
+          tempvalue.data.results[tempvalue.data.results.length - 1]["key"];
+        break;
+      }
+    }
 
-    const tempvalue = await axios.get(
-      `https://api.themoviedb.org/3/movie/${resultArr[0][0]["id"]}/videos?api_key=${process.env.API_KEY}&language=ko-KR`
-    );
-    resultArr[2] =
-      tempvalue.data.results[tempvalue.data.results.length - 1]["key"];
-
-    return res.send(JSON.stringify(resultArr));
+    return res.send(JSON.stringify(resultObj));
   } catch (error) {
-    return res.send("error");
+    console.error(error);
+    return res.send(error);
   }
 });
 
 router.get("/rank", async (req, res, next) => {
   try {
-    const resultArr = [];
+    const resultObj = {};
     await axios
       .all([
         axios.get(
@@ -47,40 +69,85 @@ router.get("/rank", async (req, res, next) => {
       ])
       .then(
         axios.spread((res0, res1) => {
-          resultArr[0] = res0.data;
-          resultArr[1] = res1.data;
+          resultObj.topRated = res0.data.results.map((movieInfo) => {
+            return {
+              id: movieInfo.id,
+              title: movieInfo.title,
+              overview: movieInfo.overview,
+              voteAverage: movieInfo.vote_average,
+              posterPath: movieInfo.poster_path,
+            };
+          });
+          resultObj.popular = res1.data.results.map((movieInfo) => {
+            return {
+              id: movieInfo.id,
+              title: movieInfo.title,
+              overview: movieInfo.overview,
+              voteAverage: movieInfo.vote_average,
+              posterPath: movieInfo.poster_path,
+            };
+          });
         })
       );
 
-    return res.send(JSON.stringify(resultArr));
+    return res.send(JSON.stringify(resultObj));
   } catch (error) {
     console.error(error);
     return res.send("error");
   }
 });
 
-router.post("/search", async (req, res, next) => {
-  const { name, page } = req.body;
+router.get("/search", async (req, res, next) => {
+  let { keyword, page } = req.query;
+  keyword = encodeURI(keyword);
   try {
-    const data = await axios.get(
-      `https://api.themoviedb.org/3/search/movie?api_key=${process.env.API_KEY}&language=ko-KR&query=${name}&page=${page}&include_adult=true&region=KR`
+    const searchResult = await axios.get(
+      `https://api.themoviedb.org/3/search/movie?api_key=${process.env.API_KEY}&language=ko-KR&query=${keyword}&page=${page}&include_adult=true&region=KR`
     );
-
-    return res.send(JSON.stringify(data.data));
+    return res.send({
+      page: searchResult.data.page,
+      totalPage: searchResult.data.total_pages,
+      results: searchResult.data.results.map((movieInfo) => {
+        return {
+          title: movieInfo.title,
+          id: movieInfo.id,
+          posterPath: movieInfo.poster_path,
+          rate: movieInfo.vote_average,
+          release:
+            movieInfo.release_date === "" ? "정보없음" : movieInfo.release_date,
+        };
+      }),
+    });
   } catch (error) {
     console.error(error);
     return res.send(error.message);
   }
 });
 
-router.post("/detail", async (req, res, next) => {
-  const { id } = req.body;
+router.get("/detail", async (req, res, next) => {
+  const { movieId } = req.query;
   try {
-    const data = await axios.get(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.API_KEY}&language=ko-KR`
+    const movieDetailData = await axios.get(
+      `https://api.themoviedb.org/3/movie/${movieId}?api_key=${process.env.API_KEY}&language=ko-KR`
     );
-    return res.send(JSON.stringify(data.data));
+    const processData = {};
+    processData.genres = movieDetailData.data.genres.map((genresObj) => {
+      return genresObj.name;
+    });
+    processData.title = movieDetailData.data["title"];
+    processData.releaseDate = movieDetailData.data["release_date"];
+    processData.nation =
+      movieDetailData.data["production_countries"][0] === undefined
+        ? "정보없음"
+        : nation[movieDetailData.data["production_countries"][0]["name"]];
+    processData.runtime = movieDetailData.data["runtime"] + "분";
+    processData.rate = movieDetailData.data["vote_average"];
+    processData.posterPath = movieDetailData.data["poster_path"];
+    processData.overview = movieDetailData.data["overview"];
+    processData.tagline = movieDetailData.data["tagline"];
+    return res.send(JSON.stringify(processData));
   } catch (error) {
+    console.error(error);
     return res.send("error");
   }
 });

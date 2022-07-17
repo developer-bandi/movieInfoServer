@@ -21,7 +21,7 @@ module.exports = () => {
             );
             var decrypted = bytes.toString(crypto.enc.Utf8);
             const result = await bcrypt.compare(decrypted, exUser.password);
-
+            console.log(result);
             if (result) {
               done(null, exUser);
             } else {

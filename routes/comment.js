@@ -2,12 +2,19 @@ const express = require("express");
 const Comment = require("../models/comment");
 const router = express.Router();
 const User = require("../models/user");
-router.post("/", async (req, res, next) => {
-  const { MovieId } = req.body;
+
+router.get("/", async (req, res, next) => {
+  const { movieId } = req.query;
   try {
     const allComment = await Comment.findAll({
-      where: { MovieId },
-      include: User,
+      where: { movieId },
+      attributes: ["id", "content", "createdAt"],
+      include: [
+        {
+          model: User,
+          attributes: ["id", "nick"],
+        },
+      ],
     });
     res.status(200);
     return res.send(allComment);
@@ -19,27 +26,24 @@ router.post("/", async (req, res, next) => {
 
 router.post("/add", async (req, res, next) => {
   const { id, nick } = req.user.dataValues;
-  const { MovieId, content } = req.body;
+  const { movieId, content } = req.body;
   try {
-    const createComment = await Comment.create({
-      movieId: MovieId,
+    const createdCommentInfo = await Comment.create({
+      movieId: movieId,
       content: content,
       UserId: id,
     });
-    const createCommentTime = await Comment.findOne({
-      where: {
-        movieId: MovieId,
-        content: content,
-        UserId: id,
-      },
-      attributes: ["id", "createdAt"],
-    });
+
     res.status(200);
+
     return res.send({
-      id: createCommentTime.id,
-      userid: id,
-      nick,
-      createdAt: createCommentTime.createdAt,
+      id: createdCommentInfo.dataValues.id,
+      content: createdCommentInfo.dataValues.content,
+      createdAt: createdCommentInfo.dataValues.createdAt,
+      User: {
+        id,
+        nick,
+      },
     });
   } catch (err) {
     console.error(err);
@@ -47,11 +51,11 @@ router.post("/add", async (req, res, next) => {
   }
 });
 
-router.post("/delete", async (req, res) => {
-  const { id } = req.body;
+router.delete("/delete", async (req, res) => {
+  const { commentId } = req.body;
   try {
     await Comment.destroy({
-      where: { id },
+      where: { id: commentId },
     });
     res.status(200);
     return res.send("성공");

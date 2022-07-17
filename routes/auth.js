@@ -26,9 +26,8 @@ router.post("/join", isNotLoggedIn, async (req, res, next) => {
       res.status(403);
       return res.send("존재하는 아이디 입니다");
     }
-    var bytes = crypto.AES.decrypt(password, process.env.PASSWORD_SECRET);
-    console.log(bytes.toString(crypto.enc.Utf8));
-    var decrypted = bytes.toString(crypto.enc.Utf8);
+    const bytes = crypto.AES.decrypt(password, process.env.PASSWORD_SECRET);
+    const decrypted = bytes.toString(crypto.enc.Utf8);
     const hash = await bcrypt.hash(decrypted, 12);
     await User.create({
       userid,
